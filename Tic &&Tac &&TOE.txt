@@ -1,15 +1,19 @@
-
-#include<iostream>
+#include <iostream>
+#include <vector>
 using namespace std;
 
-int arr[3][3] = {{1,2,3},{4,5,6},{7,8,9}};
+char arr[3][3] = {{'1','2','3'},{'4','5','6'},{'7','8','9'}};
 int choice;
 int r, c;
 char turn = 'X';
 bool draw = false;
+int countX = 0;
+int countO = 0;
+vector<pair<int, int>> positionsX; 
+vector<pair<int, int>> positionsO; 
 
 void display_board() {
-    cout << "PLAYER - 1 [X]  PLAYER - 2 [O]"<<endl;;
+    cout << "PLAYER - 1 [X]  PLAYER - 2 [O]\n";
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             cout << arr[i][j] << " ";
@@ -18,60 +22,92 @@ void display_board() {
     }
 }
 
-
 void player_turn() {
-    if (turn == 'X') {
-        cout << "Player 1 [X] turn: ";
-    } else {
-        cout << "Player 2 [O] turn: ";
-    }
+    cout << "Player " << (turn == 'X' ? "1" : "2") << " [" << turn << "] turn: ";
     cin >> choice;
 
-    
-    
-    r = (choice-1) / 3 ;
-    c = (choice-1) % 3;
+    r = (choice - 1) / 3;
+    c = (choice - 1) % 3;
 
-    
-    if (turn == 'X' && arr[r][c] != 'X' && arr[r][c] != 'O') {
-        arr[r][c] = 'X';
-        turn = 'O';
-    } else if (turn == 'O' && arr[r][c] != 'O' && arr[r][c] != 'X') {
-        arr[r][c] = 'O';
-        turn = 'X';
+    if ((turn == 'X' && arr[r][c] != 'X' && arr[r][c] != 'O') || 
+        (turn == 'O' && arr[r][c] != 'O' && arr[r][c] != 'X')) {
+        arr[r][c] = turn;
+        if (turn == 'X') {
+            countX++;
+            positionsX.push_back({r, c});
+        } else {
+            countO++;
+            positionsO.push_back({r, c});
+        }
+        turn = (turn == 'X') ? 'O' : 'X';
     } else {
         cout << "Box is already filled! Please choose another.\n";
         player_turn();
+    }
+    display_board();
+}
+
+void move_piece(vector<pair<int, int>>& positions, char piece) {
+    if (positions.empty()) {
+        cout << "No pieces to move for " << piece << "!\n";
+        return;
+    }
+
+    int oldIndex, newChoice;
+    cout << "Choose a piece to delete (1 to " << positions.size() << "): ";
+    cin >> oldIndex;
+
+    if (oldIndex < 1 || oldIndex > positions.size()) {
+        cout << "Invalid choice!\n";
+        return;
+    }
+
+    
+    int oldR = positions[oldIndex - 1].first;
+    int oldC = positions[oldIndex - 1].second;
+    arr[oldR][oldC] = '1' + (oldR * 3 + oldC); 
+
+    
+    cout << "Choose a new position for " << piece << ": ";
+    cin >> newChoice;
+
+    int newR = (newChoice - 1) / 3;
+    int newC = (newChoice - 1) % 3;
+
+    if (arr[newR][newC] != 'X' && arr[newR][newC] != 'O') {
+        arr[newR][newC] = piece; 
+        positions[oldIndex - 1] = {newR, newC}; 
+    } else {
+        cout << "New position is already filled! Choose another position.\n";
+        move_piece(positions, piece); 
     }
 
     display_board();
 }
 
-
 bool gameover() {
     
     for (int i = 0; i < 3; i++) {
-        if (arr[i][0] == arr[i][1] && arr[i][1] == arr[i][2] || 
-            arr[0][i] == arr[1][i] && arr[1][i] == arr[2][i]) {
-            return false;
+        if ((arr[i][0] == arr[i][1] && arr[i][1] == arr[i][2]) || 
+            (arr[0][i] == arr[1][i] && arr[1][i] == arr[2][i])) {
+            return false; 
         }
     }
-    if (arr[0][0] == arr[1][1] && arr[1][1] == arr[2][2] || 
-        arr[0][2] == arr[1][1] && arr[1][1] == arr[2][0]) {
-        return false;
+    if ((arr[0][0] == arr[1][1] && arr[1][1] == arr[2][2]) || 
+        (arr[0][2] == arr[1][1] && arr[1][1] == arr[2][0])) {
+        return false; 
     }
 
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (arr[i][j] != 'X' && arr[i][j] != 'O') {
-                return true;
+                return true; 
             }
         }
     }
 
-    
-    draw = true;
+    draw = true; 
     return false;
 }
 
@@ -79,6 +115,13 @@ int main() {
     while (gameover()) {
         display_board();
         player_turn();
+        
+        if (countX == 3 && countO == 3) {
+            cout << "Both players have won 3 times. Time to move a piece!\n";
+            move_piece(positionsX, 'X');
+            move_piece(positionsO, 'O');
+            countX = countO = 0; 
+        }
     }
 
     if (turn == 'X' && !draw) {
